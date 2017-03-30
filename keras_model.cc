@@ -609,6 +609,37 @@ bool KerasLayerLSTM::Step(Tensor* x, Tensor* out, Tensor* ht_1, Tensor* ct_1) {
     return true;
 }
 
+bool KerasLayerInput::LoadLayer(std::ifstream* file) {
+    KASSERT(file, "Invalid file stream");
+    return true;
+}
+
+bool KerasLayerInput::Apply(Tensor* in, Tensor* out) {
+    KASSERT(in, "Invalid input");
+    KASSERT(out, "Invalid output");
+
+    *out = *in; // just pass through
+
+    return true;
+}
+
+bool KerasLayerRepeatVector::LoadLayer(std::ifstream* file) {
+    KASSERT(file, "Invalid file stream");
+
+    KASSERT(ReadUnsignedInt(file, &n_), "Expected # of repeats n");
+
+    return true;
+}
+
+bool KerasLayerRepeatVector::Apply(Tensor* in, Tensor* out) {
+    KASSERT(in, "Invalid input");
+    KASSERT(out, "Invalid output");
+
+    *out = in->Repeat(n_, 1);  // 2D (num_samples, features) -> 3D (num_samples, n, features).
+
+    return true;
+}
+
 bool KerasModel::LoadModel(const std::string& filename) {
     std::ifstream file(filename.c_str(), std::ios::binary);
     KASSERT(file.is_open(), "Unable to open file %s", filename.c_str());
@@ -646,6 +677,12 @@ bool KerasModel::LoadModel(const std::string& filename) {
             break;
         case kEmbedding:
             layer = new KerasLayerEmbedding();
+            break;
+        case kInput:
+            layer = new KerasLayerInput();
+            break;
+        case kRepeatVector:
+            layer = new KerasLayerRepeatVector();
             break;
         default:
             break;

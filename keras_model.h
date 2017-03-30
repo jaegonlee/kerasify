@@ -202,6 +202,58 @@ class Tensor {
         return tmp;
     }
 
+    Tensor Repeat(unsigned int repeat, int axis) {
+        KDEBUG(axis < dims_.size(), "Invalid axis %d (dimensions %d)", axis, dims_.size())
+
+        std::vector<int> repeats;
+        for (int i=0; i<dims_.size(); i++){
+            int r = (axis == i)? repeat : 1;
+            repeats.push_back(r);
+        }
+
+        std::vector<int> tmp_dims_ = dims_;
+        tmp_dims_[axis] = tmp_dims_[axis] * repeat;
+
+        Tensor tmp;
+        tmp.dims_ = tmp_dims_;
+        tmp.data_.reserve(data_.size()*repeat);
+
+        if (dims_.size() == 1){
+            for (int i = 0; i < dims_[0] * repeats[0]; i++) {
+                tmp(i) = (*this)(i%dims_[0]);
+            }
+        }
+        if (dims_.size() == 2){
+            for (int i = 0; i < dims_[0] * repeats[0] ; i++) {
+                  for (int j =0; j < dims_[1] * repeats[1]; j++){
+                        tmp(i, j) = (*this)(i % dims_[0], j % dims_[1]);
+                  }
+            }
+        }
+        if (dims_.size() == 3){
+            for (int i = 0; i < dims_[0] * repeats[0] ; i++) {
+                  for (int j =0; j < dims_[1] * repeats[1]; j++){
+                        for (int k =0; k < dims_[2] * repeats[2]; k++){
+                            tmp(i, j, k) = (*this)(i % dims_[0], j % dims_[1], k % dims_[2]);
+                        }
+                  }
+            }
+        }
+        if (dims_.size() == 4){
+            for (int i = 0; i < dims_[0] * repeats[0] ; i++) {
+                  for (int j =0; j < dims_[1] * repeats[1]; j++){
+                        for (int k =0; k < dims_[2] * repeats[2]; k++){
+                              for (int l =0; l < dims_[3] * repeats[3]; l++){
+                                  tmp(i, j, k, l) = (*this)(i % dims_[0], j % dims_[1], k % dims_[2], l % dims_[3]);
+                              }
+                        }
+                  }
+            }
+        }
+
+        return tmp;
+    }
+
     void Print() {
         if (dims_.size() == 1) {
             printf("[ ");
@@ -421,6 +473,33 @@ class KerasLayerEmbedding : public KerasLayer {
     Tensor weights_;
 };
 
+class KerasLayerInput: public KerasLayer {
+  public:
+    KerasLayerInput() {}
+
+    virtual ~KerasLayerInput() {}
+
+    virtual bool LoadLayer(std::ifstream* file);
+
+    virtual bool Apply(Tensor* in, Tensor* out);
+
+  private:
+};
+
+class KerasLayerRepeatVector: public KerasLayer {
+  public:
+    KerasLayerRepeatVector() {}
+
+    virtual ~KerasLayerRepeatVector() {}
+
+    virtual bool LoadLayer(std::ifstream* file);
+
+    virtual bool Apply(Tensor* in, Tensor* out);
+
+  private:
+      unsigned int n_;
+};
+
 class KerasModel {
   public:
     enum LayerType {
@@ -431,7 +510,9 @@ class KerasModel {
         kActivation = 5,
         kMaxPooling2D = 6,
         kLSTM = 7,
-        kEmbedding = 8
+        kEmbedding = 8,
+        kInput = 9,
+        kRepeatVector = 10
     };
 
     KerasModel() {}

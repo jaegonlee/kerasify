@@ -9,6 +9,8 @@ LAYER_ACTIVATION = 5
 LAYER_MAXPOOLING2D = 6
 LAYER_LSTM = 7
 LAYER_EMBEDDING = 8
+LAYER_INPUTLAYER = 9
+LAYER_REPEATVECTOR = 10
 
 ACTIVATION_LINEAR = 1
 ACTIVATION_RELU = 2
@@ -211,6 +213,14 @@ def export_model(model, filename):
                 weights = weights.flatten()
 
                 write_floats(f, weights)
+
+            elif layer_type == 'InputLayer':
+                f.write(struct.pack('I', LAYER_INPUTLAYER))
+
+            elif layer_type == 'RepeatVector':
+                f.write(struct.pack('I', LAYER_REPEATVECTOR))
+                n = layer.get_config()['n']
+                f.write(struct.pack('I', n))
 
             else:
                 assert False, "Unsupported layer type: %s" % layer_type
