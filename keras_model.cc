@@ -69,6 +69,9 @@ bool KerasLayerActivation::LoadLayer(std::ifstream* file) {
     case kTanh:
         activation_type_ = kTanh;
         break;
+    case kSoftMax:
+        activation_type_ = kSoftMax;
+        break;
     default:
         KASSERT(false, "Unsupported activation type %d", activation);
     }
@@ -125,6 +128,25 @@ bool KerasLayerActivation::Apply(Tensor* in, Tensor* out) {
     case kTanh:
         for (size_t i = 0; i < out->data_.size(); i++) {
             out->data_[i] = std::tanh(out->data_[i]);
+        }
+        break;
+    case kSoftMax:
+        KASSERT(out->dims_.size() < 2, "Only 1D or 2D softmax is supperted now. TODO");
+        for (size_t i = 0; i < out->dims_[0]; i++) {
+            std::vector<float> row(out->data_.begin() + (i * out->dims_[0]),
+                                   out->data_.begin() + ((i + 1) * out->dims_[0]));
+
+            float max = *std::max_element(row.begin(), row.end());
+            for (size_t j =0; j < row.size(); j++) row[j] -= max;
+            
+            std::vector<float> exp_row(row.size());
+            std::transform(row.begin(), row.end(), exp_row.begin(), log);
+            float sum = std::accumulate(exp_row.begin(), exp_row.end(), 0);
+            for (size_t j =0; j < exp_row.size(); j++) exp_row[j] /= sum;
+            
+            std::copy(out->data_.begin() + (i * out->dims_[1]),
+                      out->data_.begin() + ((i + 1) * out->dims_[1]),
+                      exp_row.begin());
         }
         break;
     default:
