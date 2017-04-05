@@ -205,10 +205,7 @@ bool KerasLayerDense::Apply(Tensor* in, Tensor* out) {
         
         KASSERT(activation_.Apply(&tmp, out), "Failed to apply activation");
     }
-    else if (in->dims_.size() == 1) {
-        KASSERT(in->dims_[1] == weights_.dims_[0], "Dimension mismatch %d %d",
-                in->dims_[1], weights_.dims_[0]);
-        
+    else if (in->dims_.size() == 1) {        
         Tensor tmp(weights_.dims_[1]);
         
         for (int i = 0; i < weights_.dims_[0]; i++) {
