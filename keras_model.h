@@ -14,6 +14,8 @@
 #include <string>
 #include <vector>
 
+#include <Accelerate/Accelerate.h>
+
 #define KASSERT(x, ...)                                                        \
     if (!(x)) {                                                                \
         printf("KASSERT: %s(%d): ", __FILE__, __LINE__);                       \
@@ -188,17 +190,24 @@ class Tensor {
         KDEBUG(other.dims_.size() == 2, "Invalid tensor dimensions");
         KASSERT(dims_[1] == other.dims_[0],
                 "Cannot multiply with different inner dimensions");
-
-        Tensor tmp(dims_[0], other.dims_[1]);
-
-        for (int i = 0; i < dims_[0]; i++) {
-            for (int j = 0; j < other.dims_[1]; j++) {
-                for (int k = 0; k < dims_[1]; k++) {
-                    tmp(i, j) += (*this)(i, k) * other(k, j);
-                }
-            }
-        }
-
+        
+        float* mat_A = &data_[0];
+        float* mat_B = (float *)&(other.data_[0]);
+        
+        int M = dims_[0];
+        int N = other.dims_[1];
+        int K = dims_[1];
+        
+        float* volatile mat_C = (float *)malloc(sizeof(float)*M*N);
+        
+        // https://developer.apple.com/reference/accelerate/1513264-cblas_sgemm
+        cblas_sgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans,
+                    M, N, K, 1, mat_A, K, mat_B, N, 0, mat_C, N);
+        
+        Tensor tmp(M, N);
+        tmp.data_.assign(mat_C, mat_C + dims_[0]*other.dims_[1]);
+        free(mat_C);
+        
         return tmp;
     }
 
