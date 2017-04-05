@@ -190,25 +190,39 @@ bool KerasLayerDense::Apply(Tensor* in, Tensor* out) {
     KASSERT(out, "Invalid output");
     KASSERT(in->dims_.size() <= 2, "Invalid input dimensions");
 
+
     if (in->dims_.size() == 2) {
         KASSERT(in->dims_[1] == weights_.dims_[0], "Dimension mismatch %d %d",
                 in->dims_[1], weights_.dims_[0]);
-    }
-
-    Tensor tmp(weights_.dims_[1]);
-
-    for (int i = 0; i < weights_.dims_[0]; i++) {
-        for (int j = 0; j < weights_.dims_[1]; j++) {
-            tmp(j) += (*in)(i)*weights_(i, j);
+        
+        Tensor tmp = in->Dot(weights_);
+        
+        for (int i = 0; i < tmp.dims_[0]; i++) {
+            for (int j = 0; j < tmp.dims_[1]; j++) {
+                tmp(i, j) += biases_(j);
+            }
         }
+        
+        KASSERT(activation_.Apply(&tmp, out), "Failed to apply activation");
     }
-
-    for (int i = 0; i < biases_.dims_[0]; i++) {
-        tmp(i) += biases_(i);
+    else if (in->dims_.size() == 1) {
+        KASSERT(in->dims_[1] == weights_.dims_[0], "Dimension mismatch %d %d",
+                in->dims_[1], weights_.dims_[0]);
+        
+        Tensor tmp(weights_.dims_[1]);
+        
+        for (int i = 0; i < weights_.dims_[0]; i++) {
+            for (int j = 0; j < weights_.dims_[1]; j++) {
+                tmp(j) += (*in)(i)*weights_(i, j);
+            }
+        }
+        
+        for (int i = 0; i < biases_.dims_[0]; i++) {
+            tmp(i) += biases_(i);
+        }
+        
+        KASSERT(activation_.Apply(&tmp, out), "Failed to apply activation");
     }
-
-    KASSERT(activation_.Apply(&tmp, out), "Failed to apply activation");
-
     return true;
 }
 
