@@ -536,8 +536,8 @@ class KerasModel {
     virtual bool LoadModel(const std::string& filename);
 
     virtual bool Apply(Tensor* in, Tensor* out);
-
-  private:
+    
+  protected:
     std::vector<KerasLayer*> layers_;
 };
 
