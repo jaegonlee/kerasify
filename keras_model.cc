@@ -140,7 +140,7 @@ bool KerasLayerActivation::Apply(Tensor* in, Tensor* out) {
             for (size_t j =0; j < row.size(); j++) row[j] -= max;
             
             std::vector<float> exp_row(row.size());
-            std::transform(row.begin(), row.end(), exp_row.begin(), log);
+            std::transform(row.begin(), row.end(), exp_row.begin(), [](float c) -> float { return std::log(c); });
             float sum = std::accumulate(exp_row.begin(), exp_row.end(), 0);
             for (size_t j =0; j < exp_row.size(); j++) exp_row[j] /= sum;
             
